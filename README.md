@@ -50,16 +50,112 @@ Visit http://localhost:8000 to use the application.
 4. For a given movie or description, calculate **cosine similarity** with all movies
 5. Sort by similarity and return top N recommendations
 
-**Simple Diagram:**
+**System Architecture:**
 ```
-User Input → TF-IDF Vector → Cosine Similarity → Top N Movies → JSON Response
+┌─────────────────────────────────────────────────────────────┐
+│                    🌐 Frontend (Browser)                     │
+│  ┌───────────────────────────────────────────────────────┐   │
+│  │  🔍 Search Bar (Title / Description / Advanced)      │   │
+│  │  Beautiful UI with 3 tabs & animations              │   │
+│  └───────────────────────────────────────────────────────┘   │
+└────────────────────────┬────────────────────────────────────┘
+                         │ HTTP POST/GET (JSON)
+                         ↓
+┌─────────────────────────────────────────────────────────────┐
+│            📡 FastAPI Backend (Port 8000)                    │
+│  ┌───────────────────────────────────────────────────────┐   │
+│  │  POST /api/recommend → Get recommendations           │   │
+│  │  GET /api/genres → List available genres            │   │
+│  │  GET /api/health → Check server status              │   │
+│  └───────────────────────────────────────────────────────┘   │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         ↓
+┌─────────────────────────────────────────────────────────────┐
+│     🧠 Recommendation Engine (TF-IDF + Cosine Similarity)   │
+│  ┌───────────────────────────────────────────────────────┐   │
+│  │  1️⃣  Load 162,362 movies from IMDB dataset           │   │
+│  │  2️⃣  Preprocess descriptions (clean, tokenize)       │   │
+│  │  3️⃣  Create TF-IDF matrix (162K × 5,000)             │   │
+│  │  4️⃣  Find target movie or vectorize query            │   │
+│  │  5️⃣  Compute cosine similarity scores                │   │
+│  │  6️⃣  Sort by score & apply genre filter              │   │
+│  │  7️⃣  Return top N recommendations                    │   │
+│  └───────────────────────────────────────────────────────┘   │
+└────────────────────────┬────────────────────────────────────┘
+                         │ JSON Response
+                         ↓
+┌─────────────────────────────────────────────────────────────┐
+│           📊 Frontend Displays Results                       │
+│  ┌───────────────────────────────────────────────────────┐   │
+│  │  🎬 Movie Cards with:                               │   │
+│  │     • Title   • Description   • Genres               │   │
+│  │     • Similarity Score (0-1)                         │   │
+│  └───────────────────────────────────────────────────────┘   │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Algorithm Flow:**
+```
+User Input: "Find movies like Inception"
+         ↓
+   🔎 Parse Request & Validate
+         ↓
+   📦 Load Preprocessed Data (162,362 movies)
+         ↓
+   🎯 Find "Inception" in dataset OR vectorize description
+         ↓
+   📐 Calculate Cosine Similarity with ALL movies
+         ↓
+   ⬆️  Sort by highest similarity score
+         ↓
+   🏷️  Apply genre filter if specified
+         ↓
+   ✅ Return top 5 recommendations as JSON
+         ↓
+   🎨 Display beautiful movie cards
 ```
 
 ---
 
 ## 💡 Usage Examples
 
-### 1. Search by Movie Title
+### 🎯 Frontend Screenshot (ASCII UI)
+
+```
+╔════════════════════════════════════════════════════════════════╗
+║                 🎬 Movie Recommendation System                  ║
+║              Find your next favorite movie                      ║
+╠════════════════════════════════════════════════════════════════╣
+║                                                                ║
+║  [By Title]  [By Description]  [Advanced Search]              ║
+║                                                                ║
+║  ┌──────────────────────────────────────────────────────┐    ║
+║  │ Movie Title                                          │    ║
+║  │ ┌────────────────────────────────────────────────┐   │    ║
+║  │ │ Inception                                      │   │    ║
+║  │ └────────────────────────────────────────────────┘   │    ║
+║  │                                                      │    ║
+║  │ Number of Recommendations                           │    ║
+║  │ ┌────────────────────────────────────────────────┐   │    ║
+║  │ │ 5                                              │   │    ║
+║  │ └────────────────────────────────────────────────┘   │    ║
+║  │                                                      │    ║
+║  │ [ Find Recommendations ]                            │    ║
+║  └──────────────────────────────────────────────────────┘    ║
+║                                                                ║
+║  ✓ Found 3 recommendations!                                   ║
+║                                                                ║
+║  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────┐ ║
+║  │ The Dark Knight  │  │ Interstellar     │  │ The Prestige │ ║
+║  │ Action,Crime     │  │ Adventure,Drama  │  │ Drama,Sci-Fi │ ║
+║  │ Score: 0.457     │  │ Score: 0.423     │  │ Score: 0.381 │ ║
+║  └──────────────────┘  └──────────────────┘  └──────────────┘ ║
+║                                                                ║
+╚════════════════════════════════════════════════════════════════╝
+```
+
+### 1️⃣ Search by Movie Title
 
 **Request:**
 ```bash
@@ -96,7 +192,7 @@ curl -X POST http://localhost:8000/api/recommend \
 }
 ```
 
-### 2. Search by Description
+### 2️⃣ Search by Description
 
 **Request:**
 ```bash
@@ -127,7 +223,7 @@ curl -X POST http://localhost:8000/api/recommend \
 }
 ```
 
-### 3. Advanced Search (Title + Genre Filter)
+### 3️⃣ Advanced Search (Title + Genre Filter)
 
 **Request:**
 ```bash
@@ -164,26 +260,68 @@ curl -X POST http://localhost:8000/api/recommend \
 
 ```
 Movie_Recommend_System/
-├── main.py              # FastAPI server
-├── prediction.py        # TF-IDF + cosine similarity
-├── Feature_selection.py # Data preprocessing
-├── clean_text.py        # Text cleaning functions
-├── static/
-│   └── index.html       # Frontend UI
-├── requirements.txt     # Dependencies
-├── README.md           # This file
-└── TECHNICAL_REPORT.md # Detailed technical analysis
+│
+├── 📄 main.py                    # 🚀 FastAPI server (core)
+│
+├── 🧠 prediction.py              # Core TF-IDF + cosine similarity algorithm
+│
+├── 📊 Feature_selection.py        # Data preprocessing & feature extraction
+│
+├── 🔤 clean_text.py              # Text cleaning utilities
+│
+├── 📁 static/
+│   └── 🎨 index.html             # Beautiful interactive frontend UI
+│
+├── 📋 requirements.txt            # Python dependencies
+│
+├── 📖 README.md                  # Quick start guide (you are here)
+│
+├── 📚 TECHNICAL_REPORT.md        # In-depth technical analysis
+│
+├── 🔧 run.sh                     # Linux/Mac startup script
+│
+└── 🔧 run.bat                    # Windows startup script
 ```
 
 ### Key Files Explained
 
-| File | Purpose |
-|------|---------|
-| `main.py` | FastAPI server with CORS and error handling |
-| `prediction.py` | Core recommendation logic (TF-IDF + cosine similarity) |
-| `Feature_selection.py` | Dataset preprocessing and feature engineering |
-| `clean_text.py` | Text cleaning (lowercase, stopwords removal) |
-| `static/index.html` | Interactive web UI with 3 search modes |
+| File | Purpose | What It Does |
+|------|---------|-------------|
+| `main.py` | 🚀 FastAPI Server | Handles HTTP requests, manages endpoints |
+| `prediction.py` | 🧠 Algorithm | TF-IDF vectorization + cosine similarity |
+| `Feature_selection.py` | 📊 Preprocessing | Clean dataset, select features |
+| `clean_text.py` | 🔤 Text Tools | Lowercase, remove stopwords, tokenize |
+| `static/index.html` | 🎨 Frontend | 3 search modes, responsive design |
+
+### Data Flow Diagram
+
+```
+📁 Raw Dataset (IMDB)
+  │
+  ├─→ 🔤 clean_text.py
+  │   (Lowercase, remove special chars, remove stopwords)
+  │
+  ├─→ 📊 Feature_selection.py
+  │   (Remove duplicates, format data)
+  │
+  ├─→ 🧠 prediction.py
+  │   (Convert to TF-IDF vectors)
+  │
+  └─→ 💾 Memory (cached vectors)
+      │
+      ├─→ 🎬 User searches "Inception"
+      │   │
+      │   ├─→ 📐 Cosine Similarity Calculation
+      │   │   (Compare with 162K movies)
+      │   │
+      │   ├─→ ⬆️ Sort by highest score
+      │   │
+      │   └─→ 🏷️ Apply genre filter
+      │
+      └─→ 📡 FastAPI returns JSON
+          │
+          └─→ 🎨 Frontend displays results
+```
 
 ---
 
