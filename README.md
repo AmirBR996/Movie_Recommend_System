@@ -40,19 +40,17 @@ Visit **http://localhost:8000** in your browser
 curl -X POST http://localhost:8000/api/recommend \
   -H "Content-Type: application/json" \
   -d '{"title": "Inception", "top_n": 5}'
-  ![Movie Title Recommendation](/recommendation_using_title.png)
 
 ```
-
+![Movie Title Recommendation](/recommendation_using_title.png)
 **Search by description:**
 ```bash
 curl -X POST http://localhost:8000/api/recommend \
   -H "Content-Type: application/json" \
   -d '{"description": "A thrilling heist movie", "top_n": 5}'
-  ![Movie Title Recommendation](/recommendation_using_description.png)
 
 ```
-
+![Movie Title Recommendation](/recommendation_using_description.png)
 **Filter by genre:**
 ```bash
 curl -X POST http://localhost:8000/api/recommend \
